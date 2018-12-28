@@ -7,8 +7,7 @@ apply plugin: 'application'
 apply plugin: 'idea'
 
 group = "chrisliebaer"
-version = "0.1"
-mainClassName = "chrisliebaer.chrisliebot.ChrisliebotApplication"
+version = "0.2"
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
@@ -22,20 +21,9 @@ repositories {
 
 dependencies {
 	compileOnly "org.projectlombok:lombok:1.18.2"
-	testCompileOnly "org.projectlombok:lombok:1.18.2"
-
-	testCompile group: 'junit', name: 'junit', version: '4.12'
-
-	// logging
-	ext.slf4j = "1.7.25"
-	ext.log4j2 = "2.11.1"
-	implementation "org.slf4j:slf4j-api:$slf4j"
-	implementation "org.apache.logging.log4j:log4j-core:$log4j2"
-	implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4j2"
 
 	// minecraft
 	compile 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
-
 }
 
 idea {
