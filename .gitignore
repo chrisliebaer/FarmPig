@@ -1,0 +1,18 @@
+# gradle related
+.gradle
+/build/
+/out/
+
+# IDE
+/.idea/
+
+# application level
+/logs/
+/data/
+
+# config file
+/config.json
+/config.lua
+
+# sketches and stuff
+/_concepts
