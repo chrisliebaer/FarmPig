@@ -7,7 +7,7 @@ apply plugin: 'application'
 apply plugin: 'idea'
 
 group = "chrisliebaer"
-version = "0.2"
+version = "0.3"
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'

@@ -8,7 +8,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import lombok.Data;
-import lombok.NonNull;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -19,12 +18,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -57,9 +52,10 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 				List<FarmPigConfig> list = new Gson().fromJson(reader, new TypeToken<List<FarmPigConfig>>(){}.getType());
 				for (FarmPigConfig farmpigConfig : list) {
 					
-					var instance = farmpigConfig.toFarmPigInstance();
+					var instance = farmpigConfig.toFarmPigInstance(this);
 					if (instance != null) {
 						instances.put(UUID.randomUUID(), instance);
+						getServer().getPluginManager().registerEvents(instance, this);
 						instance.spawn();
 					}
 				}
@@ -100,7 +96,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 						// info
 						// TODO: replace with naked json https://minecraftjson.com/
 						ComponentBuilder builder = new ComponentBuilder("");
-						builder.append(TextComponent.fromLegacyText(" §l[§b*§r§l]§r §l§4Name:§r " + instance.nameTag + "§r, "));
+						builder.append(TextComponent.fromLegacyText(" §l[§b*§r§l]§r §l§4Name:§r " + instance.getNameTag() + "§r, "));
 						
 						// add view option if permission is present
 						if (sender.hasPermission("kiddycraft.farmpig.view")) {
@@ -185,7 +181,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 						if (instance == null)
 							return false;
 						
-						((Player) sender).teleport(instance.entity);
+						((Player) sender).teleport(instance.getLocation());
 						
 					} catch (IllegalArgumentException e) {
 						sender.sendMessage("This is not a valid uuid, please do not attempt to use this command directly");
@@ -238,76 +234,12 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 	}
 	
 	public FarmPigInstance createNew(Location location, EntityType type, String name, long respawnTicks) {
-		return new FarmPigInstance(name, location, null, type, respawnTicks);
+		return new FarmPigInstance(this, name, location, null, type, respawnTicks);
 	}
 	
-	
-	/**
-	 * Descriptes an active FarmPig that has been configure.
-	 */
-	public final class FarmPigInstance implements Listener {
-		
-		private String nameTag;
-		private Location location;
-		private EntityType type;
-		
-		private long respawnTicks;
-		private transient LivingEntity entity;
-		
-		private FarmPigInstance(String name, @NonNull Location location, LivingEntity entity, @NonNull EntityType type, long respawnTicks) {
-			Preconditions.checkArgument(type.isAlive(), "entity is not alive");
-			Preconditions.checkArgument(type.isSpawnable(), "entity is not spawnable by regular means");
-			Preconditions.checkArgument(respawnTicks >= 0, "respawn delay must be >= 0");
-			this.nameTag = name;
-			this.location = location;
-			this.entity = entity;
-			this.type = type;
-			this.respawnTicks = respawnTicks;
-		}
-		
-		/**
-		 * Removed the current instance of this farmpig and spawns a new one.
-		 */
-		public void respawn() {
-			despawn();
-			spawn();
-		}
-		
-		/**
-		 * Removed this instance from the game world but does not remove it's entry.
-		 */
-		public void despawn() {
-			if (entity != null) {
-				entity.remove();
-				entity = null;
-			}
-		}
-		
-		public void spawn() {
-			if (entity == null) {
-				// cast is safe since only living entities are allowed as type
-				entity = (LivingEntity) location.getWorld().spawnEntity(location, type);
-				entity.setAI(false);
-				entity.setCollidable(false);
-				entity.setSilent(true);
-				
-				if (nameTag != null) {
-					entity.setCustomName(nameTag);
-					entity.setCustomNameVisible(true);
-				}
-			}
-		}
-		
-		@EventHandler
-		public void onEntityDeath(EntityDeathEvent ev) {
-			if (ev.getEntity() == entity) {
-				getServer().getScheduler().runTaskLater(FarmPigPlugin.this, this::respawn, respawnTicks);
-			}
-		}
-	}
 	
 	@Data
-	private final class FarmPigConfig {
+	private static final class FarmPigConfig {
 		private String nameTag;
 		private EntityType type;
 		private long respawnTicks;
@@ -316,15 +248,15 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 		public FarmPigConfig() {}
 		
 		public FarmPigConfig(FarmPigInstance i) {
-			nameTag = i.nameTag;
-			type = i.type;
-			respawnTicks = i.respawnTicks;
-			location = i.location.serialize();
+			nameTag = i.getNameTag();
+			type = i.getType();
+			respawnTicks = i.getRespawnTicks();
+			location = i.getLocation().serialize();
 		}
 		
-		public FarmPigInstance toFarmPigInstance() {
+		public FarmPigInstance toFarmPigInstance(FarmPigPlugin plugin) {
 			try {
-				return new FarmPigInstance(nameTag, Location.deserialize(location), null, type, respawnTicks);
+				return new FarmPigInstance(plugin, nameTag, Location.deserialize(location), null, type, respawnTicks);
 			} catch (IllegalArgumentException e) {
 				return null; // world doesn't exist
 			}
