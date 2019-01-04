@@ -1,9 +1,7 @@
 package de.kiddycraft.farmpig;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -37,7 +35,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 	
 	private static final long RESPAWN_TICKS = 20;
 	private static final List<EntityType> VALID_TYPES =
-			stream(EntityType.values()).filter((Predicate<EntityType>) t -> t.isAlive() && t.isSpawnable()).collect(Collectors.toList());
+			stream(EntityType.values()).filter(t -> t.isAlive() && t.isSpawnable()).collect(Collectors.toList());
 	
 	private HashMap<UUID, FarmPigInstance> instances = new HashMap<>();
 	
@@ -226,7 +224,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 			Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 			
 			// serialize config
-			var list = instances.values().stream().map((Function<FarmPigInstance, FarmPigConfig>) FarmPigConfig::new).collect(Collectors.toList());
+			var list = instances.values().stream().map(FarmPigConfig::new).collect(Collectors.toList());
 			gson.toJson(list, writer);
 		} catch (IOException e) {
 			getLogger().log(Level.SEVERE, "failed to write farmpig config", e);
