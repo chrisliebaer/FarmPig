@@ -94,7 +94,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 						// info
 						// TODO: replace with naked json https://minecraftjson.com/
 						ComponentBuilder builder = new ComponentBuilder("");
-						builder.append(TextComponent.fromLegacyText(" §l[§b*§r§l]§r §l§4Name:§r " + instance.getNameTag() + "§r, "));
+						// builder.append(TextComponent.fromLegacyText(" §l[§b*§r§l]§r §l§4Name:§r " + instance.getNameTag() + "§r, "));
 						
 						// add view option if permission is present
 						if (sender.hasPermission("kiddycraft.farmpig.view")) {
@@ -103,7 +103,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 							view.setHoverEvent(
 									new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Teleports you to this farmpig's location").create()));
 							view.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/farmpig view " + uuid));
-							builder.append(view);
+							// builder.append(view);
 						}
 						
 						builder.append(" ");
@@ -115,7 +115,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 							remove.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/farmpig remove " + uuid.toString()));
 							remove.setHoverEvent(
 									new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Removes this farmpig from the game").create()));
-							builder.append(remove);
+							// builder.append(remove);
 						}
 						
 						sender.spigot().sendMessage(builder.create());

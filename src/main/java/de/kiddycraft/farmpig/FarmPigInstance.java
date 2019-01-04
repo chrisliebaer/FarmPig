@@ -3,7 +3,10 @@ package de.kiddycraft.farmpig;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
+import net.minecraft.server.v1_8_R3.EntityLiving;
+import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import org.bukkit.Location;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftLivingEntity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
@@ -66,9 +69,21 @@ public final class FarmPigInstance implements Listener {
 		if (entity == null) {
 			// cast is safe since only living entities are allowed as type
 			entity = (LivingEntity) location.getWorld().spawnEntity(location, type);
-			entity.setAI(false);
-			entity.setCollidable(false);
-			entity.setSilent(true);
+
+			EntityLiving living = ((CraftLivingEntity) entity).getHandle();
+			NBTTagCompound compound = living.getNBTTag();
+			if (compound == null) {
+				compound = new NBTTagCompound();
+			}
+			living.c(compound);
+			compound.setInt("NoAI", 1);
+			compound.setBoolean("Silent", true);
+			living.f(compound);
+
+			// we hope people are using >= 1.8.8 ...
+			if (!VersionUtil.versionEquals("1.8.8")) {
+				entity.setCollidable(false);
+			}
 			
 			if (nameTag != null) {
 				entity.setCustomName(nameTag);
