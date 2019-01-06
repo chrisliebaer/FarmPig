@@ -5,7 +5,10 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import de.kiddycraft.farmpig.legacy.Entity18NBT;
+import de.kiddycraft.farmpig.legacy.EntityTagManipulation;
 import lombok.Data;
+import lombok.Getter;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -37,11 +40,23 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 	private static final List<EntityType> VALID_TYPES =
 			stream(EntityType.values()).filter(t -> t.isAlive() && t.isSpawnable()).collect(Collectors.toList());
 	
+	@Getter private EntityTagManipulation tagManipulation;
+	
 	private HashMap<UUID, FarmPigInstance> instances = new HashMap<>();
 	
 	@Override
 	public void onEnable() {
-		// TODO: find way to implement server version check?
+		if(VersionUtil.versionEquals("1.8.8")) {
+			getLogger().log(Level.INFO, "This server appears to be running on 1.8.8, enabling legacy fallback");
+			try {
+				tagManipulation = new Entity18NBT();
+			} catch (ClassNotFoundException | NoSuchMethodException e) {
+				throw new RuntimeException("Could not, set up legacy fallback for FarmPig, please ensure your server is set up properly and contact author", e);
+			}
+		} else {
+			tagManipulation = new FarmPigInstance.DefaultEntityTagManipulator();
+		}
+		
 		
 		// load config from disk and spawn farmpigs
 		File configFile = new File(getDataFolder(), "farmpigs.json");
@@ -94,7 +109,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 						// info
 						// TODO: replace with naked json https://minecraftjson.com/
 						ComponentBuilder builder = new ComponentBuilder("");
-						// builder.append(TextComponent.fromLegacyText(" §l[§b*§r§l]§r §l§4Name:§r " + instance.getNameTag() + "§r, "));
+						builder.append(TextComponent.fromLegacyText(" §l[§b*§r§l]§r §l§4Name:§r " + instance.getNameTag() + "§r, "));
 						
 						// add view option if permission is present
 						if (sender.hasPermission("kiddycraft.farmpig.view")) {
@@ -103,9 +118,8 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 							view.setHoverEvent(
 									new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Teleports you to this farmpig's location").create()));
 							view.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/farmpig view " + uuid));
-							// builder.append(view);
+							builder.append(view);
 						}
-						
 						builder.append(" ");
 						
 						// add remove option if permission is present
@@ -115,7 +129,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 							remove.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/farmpig remove " + uuid.toString()));
 							remove.setHoverEvent(
 									new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Removes this farmpig from the game").create()));
-							// builder.append(remove);
+							builder.append(remove);
 						}
 						
 						sender.spigot().sendMessage(builder.create());
@@ -140,7 +154,6 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 					if (args.length >= 3) { // check if name is given
 						name = Joiner.on(' ').join(Arrays.copyOfRange(args, 2, args.length));
 						name = ChatColor.translateAlternateColorCodes('&', name);
-						
 					}
 					
 					addFarmPig(((Player) sender).getLocation(), name, type);

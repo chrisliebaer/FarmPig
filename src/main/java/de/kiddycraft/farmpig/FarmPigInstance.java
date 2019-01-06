@@ -1,12 +1,10 @@
 package de.kiddycraft.farmpig;
 
 import com.google.common.base.Preconditions;
+import de.kiddycraft.farmpig.legacy.EntityTagManipulation;
 import lombok.Getter;
 import lombok.NonNull;
-import net.minecraft.server.v1_8_R3.EntityLiving;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftLivingEntity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
@@ -44,7 +42,7 @@ public final class FarmPigInstance implements Listener {
 	}
 	
 	/**
-	 * Removed the current instance of this farmpig and spawns a new one.
+	 * Remove the current instance of this farmpig and spawns a new one.
 	 */
 	public void respawn() {
 		despawn();
@@ -52,7 +50,7 @@ public final class FarmPigInstance implements Listener {
 	}
 	
 	/**
-	 * Removed this instance from the game world but does not remove it's entry.
+	 * Remove this instance from the game world but does not remove it's entry.
 	 */
 	public void despawn() {
 		if (entity != null) {
@@ -70,20 +68,7 @@ public final class FarmPigInstance implements Listener {
 			// cast is safe since only living entities are allowed as type
 			entity = (LivingEntity) location.getWorld().spawnEntity(location, type);
 
-			EntityLiving living = ((CraftLivingEntity) entity).getHandle();
-			NBTTagCompound compound = living.getNBTTag();
-			if (compound == null) {
-				compound = new NBTTagCompound();
-			}
-			living.c(compound);
-			compound.setInt("NoAI", 1);
-			compound.setBoolean("Silent", true);
-			living.f(compound);
-
-			// we hope people are using >= 1.8.8 ...
-			if (!VersionUtil.versionEquals("1.8.8")) {
-				entity.setCollidable(false);
-			}
+			plugin.getTagManipulation().updateEntity(entity);
 			
 			if (nameTag != null) {
 				entity.setCustomName(nameTag);
@@ -110,6 +95,16 @@ public final class FarmPigInstance implements Listener {
 	public void onChunkLoad(ChunkLoadEvent ev) {
 		if (location.getChunk() == ev.getChunk()) {
 			respawn();
+		}
+	}
+	
+	public static class DefaultEntityTagManipulator implements EntityTagManipulation {
+		
+		@Override
+		public void updateEntity(LivingEntity entity) {
+			entity.setAI(false);
+			entity.setSilent(true);
+			entity.setCollidable(false);
 		}
 	}
 }
