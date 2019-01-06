@@ -5,14 +5,9 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import de.kiddycraft.farmpig.legacy.Entity18NBT;
-import de.kiddycraft.farmpig.legacy.EntityTagManipulation;
+import de.kiddycraft.farmpig.legacy.*;
 import lombok.Data;
 import lombok.Getter;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -41,7 +36,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 			stream(EntityType.values()).filter(t -> t.isAlive() && t.isSpawnable()).collect(Collectors.toList());
 	
 	@Getter private EntityTagManipulation tagManipulation;
-	
+	private FarmpigEnumerator enumerator;
 	private HashMap<UUID, FarmPigInstance> instances = new HashMap<>();
 	
 	@Override
@@ -50,11 +45,13 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 			getLogger().log(Level.INFO, "This server appears to be running on 1.8.8, enabling legacy fallback");
 			try {
 				tagManipulation = new Entity18NBT();
-			} catch (ClassNotFoundException | NoSuchMethodException e) {
+				enumerator = new Farmpig18Enumerator();
+			} catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException e) {
 				throw new RuntimeException("Could not, set up legacy fallback for FarmPig, please ensure your server is set up properly and contact author", e);
 			}
 		} else {
-			tagManipulation = new FarmPigInstance.DefaultEntityTagManipulator();
+			tagManipulation = new DefaultEntityTagManipulator();
+			enumerator = new DefaultFarmpigEnumerator();
 		}
 		
 		
@@ -76,9 +73,6 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 				throw new RuntimeException("failed to load farmpigs config", e);
 			}
 		}
-		
-		// attempt to find leftover entities in world and remove
-		// TODO would cause disk IO every time new entity is spawned since new uuid
 		
 		getServer().getPluginCommand("farmpig").setExecutor(this);
 	}
@@ -106,33 +100,7 @@ public class FarmPigPlugin extends JavaPlugin implements CommandExecutor {
 						var instance = entry.getValue();
 						var uuid = entry.getKey();
 						
-						// info
-						// TODO: replace with naked json https://minecraftjson.com/
-						ComponentBuilder builder = new ComponentBuilder("");
-						builder.append(TextComponent.fromLegacyText(" §l[§b*§r§l]§r §l§4Name:§r " + instance.getNameTag() + "§r, "));
-						
-						// add view option if permission is present
-						if (sender.hasPermission("kiddycraft.farmpig.view")) {
-							TextComponent view = new TextComponent("[View]");
-							view.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-							view.setHoverEvent(
-									new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Teleports you to this farmpig's location").create()));
-							view.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/farmpig view " + uuid));
-							builder.append(view);
-						}
-						builder.append(" ");
-						
-						// add remove option if permission is present
-						if (sender.hasPermission("kiddycraft.farmpig.remove")) {
-							TextComponent remove = new TextComponent("[Remove]");
-							remove.setColor(net.md_5.bungee.api.ChatColor.DARK_RED);
-							remove.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/farmpig remove " + uuid.toString()));
-							remove.setHoverEvent(
-									new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Removes this farmpig from the game").create()));
-							builder.append(remove);
-						}
-						
-						sender.spigot().sendMessage(builder.create());
+						enumerator.enumerate((Player) sender, uuid, instance);
 					}
 					break;
 				case "add":

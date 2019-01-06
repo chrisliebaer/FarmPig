@@ -1,7 +1,6 @@
 package de.kiddycraft.farmpig;
 
 import com.google.common.base.Preconditions;
-import de.kiddycraft.farmpig.legacy.EntityTagManipulation;
 import lombok.Getter;
 import lombok.NonNull;
 import org.bukkit.Location;
@@ -98,13 +97,4 @@ public final class FarmPigInstance implements Listener {
 		}
 	}
 	
-	public static class DefaultEntityTagManipulator implements EntityTagManipulation {
-		
-		@Override
-		public void updateEntity(LivingEntity entity) {
-			entity.setAI(false);
-			entity.setSilent(true);
-			entity.setCollidable(false);
-		}
-	}
 }

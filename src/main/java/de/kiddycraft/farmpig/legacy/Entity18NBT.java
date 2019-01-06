@@ -60,7 +60,7 @@ public class Entity18NBT implements EntityTagManipulation {
 			methodEntityLivingF.invoke(entityLiving, nbtTagCompound);
 			
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | InstantiationException e) {
-			e.printStackTrace();
+			throw new RuntimeException("Unexpected error in legacy reflection call", e);
 		}
 	}
 }
